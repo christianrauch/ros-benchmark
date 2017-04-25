@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <benchmark/ByteVectorStamped.h>
 #include <std_msgs/Float64.h>
+#include <thread>
 
 class DelayPublischer {
 public:
@@ -8,7 +9,7 @@ public:
 
     void pongCallback(const benchmark::ByteVectorStampedConstPtr &msg) {
         const ros::Duration delay = ros::Time::now() - msg->time;
-        ROS_INFO_STREAM("RTT: " << delay.nsec << " ns");
+        ROS_INFO_STREAM("RTT: " << delay.toSec() << " s");
         std_msgs::Float64 rtt;
         rtt.data = delay.toSec();
         pub.publish(rtt);
@@ -31,6 +32,8 @@ int main(int argc, char **argv) {
 
     ros::Subscriber pong_sub = n.subscribe("pong", 1, &DelayPublischer::pongCallback, &dpub);
 
+    std::thread spin_thread( [](){ ros::spin(); } );
+
     ros::Rate loop_rate(1);
 
     while (ros::ok()) {
@@ -40,8 +43,8 @@ int main(int argc, char **argv) {
 
         ping_pub.publish(msg);
 
-        ros::spinOnce();
-
         loop_rate.sleep();
     }
+
+    spin_thread.join();
 }
