@@ -22,7 +22,21 @@ int main(int argc, char **argv) {
 
     PingPong pingping(pong_pub);
 
-    const ros::Subscriber ping_sub = n.subscribe("ping", 1, &PingPong::pingCallback, &pingping);
+    // configure
+    std::string transport_protocol_name;
+    if(!n.param<std::string>("transport", transport_protocol_name, "udp"))
+        ROS_INFO_STREAM("No 'transport' given, using udp by default.");
+    else
+        ROS_INFO_STREAM("Transport set to: " << transport_protocol_name);
+
+    // set connetcion type
+    ros::TransportHints transport;
+    if(transport_protocol_name.compare("udp"))
+        transport = ros::TransportHints().udp();
+    else if(transport_protocol_name.compare("tcp"))
+        transport = ros::TransportHints().tcp();
+
+    const ros::Subscriber ping_sub = n.subscribe("ping", 1, &PingPong::pingCallback, &pingping, transport);
 
     ros::spin();
 }
